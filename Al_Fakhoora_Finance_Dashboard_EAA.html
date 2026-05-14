@@ -1,0 +1,1574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Al Fakhoora Finance Dashboard - Education Above All</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif; background: #F5F5F5; min-height: 100vh; color: #333333; }
+        .password-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, #E31837 0%, #C41432 100%); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 9999; }
+        .password-box { background: #FFFFFF; border-radius: 16px; padding: 40px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
+        .password-box h2 { color: #E31837; margin-bottom: 20px; font-size: 24px; }
+        .password-box input { padding: 12px 20px; border-radius: 8px; border: 2px solid #E31837; background: #FFFFFF; color: #333333; font-size: 16px; width: 250px; margin-bottom: 15px; }
+        .password-box input::placeholder { color: #999999; }
+        .password-box button { padding: 12px 30px; border-radius: 8px; border: none; background: #E31837; color: #FFFFFF; font-size: 16px; cursor: pointer; transition: all 0.3s; font-weight: bold; }
+        .password-box button:hover { background: #C41432; }
+        .error-msg { color: #E31837; margin-top: 10px; display: none; font-weight: bold; }
+        .dashboard { display: none; padding: 20px; max-width: 1400px; margin: 0 auto; }
+        .header { text-align: center; padding: 30px 0; margin-bottom: 30px; background: #FFFFFF; border-radius: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .header img { height: 60px; margin-bottom: 15px; }
+        .header h1 { font-size: 32px; color: #E31837; margin-bottom: 10px; font-weight: bold; }
+        .header p { color: #666666; font-size: 16px; }
+        .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .kpi-card { background: #FFFFFF; border-radius: 16px; padding: 24px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1); transition: transform 0.3s; border-top: 4px solid #E31837; }
+        .kpi-card:hover { transform: translateY(-5px); box-shadow: 0 5px 20px rgba(227,24,55,0.2); }
+        .kpi-icon { font-size: 32px; margin-bottom: 10px; color: #E31837; }
+        .kpi-value { font-size: 28px; font-weight: bold; color: #E31837; margin-bottom: 5px; }
+        .kpi-label { font-size: 13px; color: #666666; text-transform: uppercase; letter-spacing: 1px; }
+        .kpi-sub { font-size: 12px; color: #999999; margin-top: 5px; }
+        .section { background: #FFFFFF; border-radius: 16px; padding: 24px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .section-title { font-size: 20px; color: #E31837; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid #E31837; font-weight: bold; }
+        .chart-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px; margin-bottom: 20px; }
+        .chart-container { position: relative; height: 300px; }
+        .filters { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; }
+        .filters select, .filters input { padding: 10px 15px; border-radius: 8px; border: 2px solid #E31837; background: #FFFFFF; color: #333333; font-size: 14px; }
+        .filters select option { background: #FFFFFF; color: #333333; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th { background: #E31837; padding: 12px; text-align: left; color: #FFFFFF; font-weight: 600; text-transform: uppercase; font-size: 11px; letter-spacing: 1px; }
+        td { padding: 12px; border-bottom: 1px solid #EEEEEE; color: #333333; }
+        tr:hover td { background: #FFF5F7; }
+        .status-badge { padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 600; text-transform: uppercase; }
+        .status-active { background: #E31837; color: #FFFFFF; }
+        .status-completed { background: #333333; color: #FFFFFF; }
+        .status-suspend { background: #F1C40F; color: #333333; }
+        .status-terminated { background: #999999; color: #FFFFFF; }
+        .status-pipeline { background: #9B59B6; color: #FFFFFF; }
+        .payment-due-soon { color: #E31837; font-weight: bold; }
+        .payment-upcoming { color: #F1C40F; font-weight: bold; }
+        .payment-future { color: #2ECC71; font-weight: bold; }
+        .progress-bar { width: 100%; height: 8px; background: #EEEEEE; border-radius: 4px; overflow: hidden; }
+        .progress-fill { height: 100%; border-radius: 4px; transition: width 0.5s; }
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 3px solid #EEEEEE; }
+        .tab { padding: 12px 24px; cursor: pointer; color: #999999; border-bottom: 3px solid transparent; transition: all 0.3s; font-weight: 600; }
+        .tab.active { color: #E31837; border-bottom-color: #E31837; }
+        .tab:hover { color: #E31837; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .number { font-family: "Courier New", monospace; font-weight: bold; color: #E31837; }
+        .cash-flow-bar { display: flex; align-items: center; margin-bottom: 8px; }
+        .cash-flow-label { width: 200px; font-size: 13px; color: #333333; font-weight: 600; }
+        .cash-flow-progress { flex: 1; height: 24px; background: #EEEEEE; border-radius: 4px; overflow: hidden; position: relative; }
+        .cash-flow-fill { height: 100%; border-radius: 4px; display: flex; align-items: center; justify-content: flex-end; padding-right: 8px; font-size: 11px; font-weight: bold; color: #FFFFFF; }
+        .cash-flow-legend { display: flex; gap: 20px; margin-top: 15px; font-size: 12px; }
+        .cash-flow-legend span { display: flex; align-items: center; gap: 5px; }
+        .cash-flow-legend .dot { width: 10px; height: 10px; border-radius: 2px; }
+        @media (max-width: 768px) { .chart-grid { grid-template-columns: 1fr; } .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
+    </style>
+</head>
+<body>
+    <div class="password-overlay" id="passwordOverlay">
+        <div class="password-box">
+            <img src="https://kimi-web-img.moonshot.cn/img/www.educationaboveall.org/ff09f442095739e793acd8910de24771a1c9de26.png" style="height: 50px; margin-bottom: 20px;">
+            <h2>Al Fakhoora Dashboard</h2>
+            <p style="color: #666666; margin-bottom: 20px;">Enter password to access</p>
+            <input type="password" id="passwordInput" placeholder="Password">
+            <br><button onclick="checkPassword()">Enter</button>
+            <p class="error-msg" id="errorMsg">Incorrect password. Try again.</p>
+        </div>
+    </div>
+
+    <div class="dashboard" id="dashboard">
+        <div class="header">
+            <img src="https://kimi-web-img.moonshot.cn/img/www.educationaboveall.org/ff09f442095739e793acd8910de24771a1c9de26.png" alt="Education Above All">
+            <h1>Al Fakhoora Finance Dashboard</h1>
+            <p>Real-time view of Education Above All global investment portfolio</p>
+        </div>
+
+        <div class="kpi-grid">
+            <div class="kpi-card">
+                <div class="kpi-icon">$</div>
+                <div class="kpi-value" id="kpi-total-budget">$0M</div>
+                <div class="kpi-label">Total Portfolio Budget</div>
+                <div class="kpi-sub">Across all projects</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-icon">B</div>
+                <div class="kpi-value" id="kpi-eaa-contribution">$0M</div>
+                <div class="kpi-label">EAA Contribution</div>
+                <div class="kpi-sub" id="kpi-eaa-pct">0% of total</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-icon">T</div>
+                <div class="kpi-value" id="kpi-transferred">$0M</div>
+                <div class="kpi-label">Total Transferred</div>
+                <div class="kpi-sub" id="kpi-transfer-pct">0% of EAA</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-icon">E</div>
+                <div class="kpi-value" id="kpi-expenditure">$0M</div>
+                <div class="kpi-label">Expenditure to Date</div>
+                <div class="kpi-sub" id="kpi-exp-pct">0% of EAA</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-icon">R</div>
+                <div class="kpi-value" id="kpi-remaining">$0M</div>
+                <div class="kpi-label">Remaining Budget</div>
+                <div class="kpi-sub">Available for spending</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-icon">L</div>
+                <div class="kpi-value" id="kpi-leverage">0.0x</div>
+                <div class="kpi-label">Partner Leverage</div>
+                <div class="kpi-sub">Per $1 EAA spent</div>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <div class="tab active" onclick="showTab('overview', this)">Overview</div>
+            <div class="tab" onclick="showTab('projects', this)">Projects</div>
+            <div class="tab" onclick="showTab('payments', this)">Payment Calendar</div>
+            <div class="tab" onclick="showTab('cashflow', this)">Cash Flow</div>
+            <div class="tab" onclick="showTab('details', this)">Project Details</div>
+        </div>
+
+        <div id="overview" class="tab-content active">
+            <div class="chart-grid">
+                <div class="section">
+                    <div class="section-title">Budget by Country</div>
+                    <div class="chart-container"><canvas id="countryChart"></canvas></div>
+                </div>
+                <div class="section">
+                    <div class="section-title">Funding Structure</div>
+                    <div class="chart-container"><canvas id="fundingChart"></canvas></div>
+                </div>
+            </div>
+            <div class="chart-grid">
+                <div class="section">
+                    <div class="section-title">Project Status Distribution</div>
+                    <div class="chart-container"><canvas id="statusChart"></canvas></div>
+                </div>
+                <div class="section">
+                    <div class="section-title">Budget Consumption by Active Projects</div>
+                    <div class="chart-container"><canvas id="consumptionChart"></canvas></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="projects" class="tab-content">
+            <div class="section">
+                <div class="section-title">All Projects</div>
+                <div class="filters">
+                    <select id="filter-status" onchange="filterProjects()"><option value="">All Status</option><option value="Active">Active</option><option value="Completed">Completed</option><option value="Suspend">Suspended</option><option value="Terminated">Terminated</option><option value="Pipeline">Pipeline</option></select>
+                    <select id="filter-country" onchange="filterProjects()"><option value="">All Countries</option></select>
+                    <input type="text" id="filter-search" placeholder="Search project..." onkeyup="filterProjects()">
+                </div>
+                <div style="overflow-x: auto;">
+                    <table id="projects-table">
+                        <thead><tr><th>Project</th><th>Country</th><th>Partner</th><th>Status</th><th>Total Budget</th><th>EAA Contribution</th><th>Transferred</th><th>Expenditure</th><th>Remaining</th><th>Leverage</th><th>Consumption</th></tr></thead>
+                        <tbody id="projects-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="payments" class="tab-content">
+            <div class="section">
+                <div class="section-title">Upcoming Payment Schedule</div>
+                <div style="overflow-x: auto;">
+                    <table id="payments-table">
+                        <thead><tr><th>Project</th><th>Country</th><th>Partner</th><th>Next Installment</th><th>Payment Date</th><th>Status</th><th>Remaining Obligated</th></tr></thead>
+                        <tbody id="payments-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="cashflow" class="tab-content">
+            <div class="section">
+                <div class="section-title">Cash Flow Forecast - Active Projects</div>
+                <div id="cash-flow-chart-container" style="height: 350px; margin-bottom: 30px;">
+                    <canvas id="cashFlowChart"></canvas>
+                </div>
+                <div class="section-title">Project-by-Project Breakdown</div>
+                <div id="cash-flow-bars"></div>
+                <div class="cash-flow-legend">
+                    <span><div class="dot" style="background: #333333;"></div> Disbursed</span>
+                    <span><div class="dot" style="background: #E31837;"></div> 2026</span>
+                    <span><div class="dot" style="background: #F1C40F;"></div> 2027</span>
+                    <span><div class="dot" style="background: #2ECC71;"></div> 2028</span>
+                    <span><div class="dot" style="background: #9B59B6;"></div> 2029+</span>
+                </div>
+            </div>
+        </div>
+
+        <div id="details" class="tab-content">
+            <div class="section">
+                <div class="section-title">Project Financial Details</div>
+                <div class="filters">
+                    <select id="detail-project" onchange="showProjectDetail()"><option value="">Select a project...</option></select>
+                </div>
+                <div id="project-detail-content"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const dashboardData = {
+  "summary": {
+    "total_budget": 316483319.45,
+    "total_eaa": 174397383.56,
+    "total_expenditure": 112342861.14,
+    "total_transferred": 96452364.94,
+    "total_remaining": 41027030.13,
+    "total_obligated": 38510523.96,
+    "partner_cofunding": 142085935.88,
+    "active_count": 12,
+    "completed_count": 22,
+    "total_projects": 37
+  },
+  "projects": [
+    {
+      "project_short": "Al Quds Bard College",
+      "country": "Palestine",
+      "partner": "Bard",
+      "status": "Active",
+      "total_budget": 9869638.252222147,
+      "eaa_contribution": 4113723.65,
+      "expenditure_eaa": 2371066.824708314,
+      "total_transferred": 2741778.0,
+      "remaining_budget": 1742656.8252916858,
+      "remaining_obligated": 1371945.65,
+      "partner_leverage": 1.4,
+      "budget_consumption_pct": 57.6,
+      "transfer_vs_eaa_pct": 66.6,
+      "next_installment": 522955.0,
+      "next_payment_date": "2027-02-01",
+      "payment_status": "Future",
+      "start_date": "2021-01-20",
+      "end_date": "2029-01-01",
+      "targets": 339
+    },
+    {
+      "project_short": "Afghan Project (QSAP): Phase 1",
+      "country": "USA",
+      "partner": "IIE",
+      "status": "Active",
+      "total_budget": 38756509.0,
+      "eaa_contribution": 12813604.0,
+      "expenditure_eaa": 7568656.0,
+      "total_transferred": 7060145.0,
+      "remaining_budget": 5244948.0,
+      "remaining_obligated": 5753459.0,
+      "partner_leverage": 2.02,
+      "budget_consumption_pct": 59.1,
+      "transfer_vs_eaa_pct": 55.1,
+      "next_installment": 1643846.0,
+      "next_payment_date": "2026-08-01",
+      "payment_status": "Upcoming",
+      "start_date": "2022-07-01",
+      "end_date": "2028-09-30",
+      "targets": 276
+    },
+    {
+      "project_short": "Afghan Project (QSAP): Phase 2",
+      "country": "USA",
+      "partner": "IIE",
+      "status": "Active",
+      "total_budget": 15112087.0,
+      "eaa_contribution": 4177450.0,
+      "expenditure_eaa": 12282.0,
+      "total_transferred": 1700000.0,
+      "remaining_budget": 4165168.0,
+      "remaining_obligated": 2477450.0,
+      "partner_leverage": 2.62,
+      "budget_consumption_pct": 0.3,
+      "transfer_vs_eaa_pct": 40.7,
+      "next_installment": 850000.0,
+      "next_payment_date": "2026-08-01",
+      "payment_status": "Upcoming",
+      "start_date": "2025-01-12",
+      "end_date": "2027-07-31",
+      "targets": 149
+    },
+    {
+      "project_short": "- Sciences Po 2",
+      "country": "France",
+      "partner": "Sciences Po",
+      "status": "Active",
+      "total_budget": 3124838.0,
+      "eaa_contribution": 1249935.0,
+      "expenditure_eaa": 755486.0,
+      "total_transferred": 755486.0,
+      "remaining_budget": 494449.0,
+      "remaining_obligated": 494449.0,
+      "partner_leverage": 1.5,
+      "budget_consumption_pct": 60.4,
+      "transfer_vs_eaa_pct": 60.4,
+      "next_installment": 494449.0,
+      "next_payment_date": "2026-08-01",
+      "payment_status": "Upcoming",
+      "start_date": "2023-07-01",
+      "end_date": "2026-07-30",
+      "targets": 52
+    },
+    {
+      "project_short": "Birzeit University Phase II",
+      "country": "Palestine",
+      "partner": "Birzeit University",
+      "status": "Active",
+      "total_budget": 20000000.0,
+      "eaa_contribution": 10000000.0,
+      "expenditure_eaa": 1963412.0,
+      "total_transferred": 2930000.0,
+      "remaining_budget": 8036588.0,
+      "remaining_obligated": 7070000.0,
+      "partner_leverage": 1.0,
+      "budget_consumption_pct": 19.6,
+      "transfer_vs_eaa_pct": 29.3,
+      "next_installment": 930000.0,
+      "next_payment_date": "2026-08-01",
+      "payment_status": "Upcoming",
+      "start_date": "2025-04-23",
+      "end_date": "2029-11-30",
+      "targets": 1966
+    },
+    {
+      "project_short": "American University of Beirut (AUB)",
+      "country": "Lebanon",
+      "partner": "AUB",
+      "status": "Completed",
+      "total_budget": 39129405.0,
+      "eaa_contribution": 4143840.0,
+      "expenditure_eaa": 3345001.5,
+      "total_transferred": 3622751.0,
+      "remaining_budget": 0.0,
+      "remaining_obligated": 0.0,
+      "partner_leverage": 8.44,
+      "budget_consumption_pct": 80.7,
+      "transfer_vs_eaa_pct": 87.4,
+      "next_installment": 0.0,
+      "next_payment_date": "",
+      "payment_status": "No Payment Due",
+      "start_date": "2021-08-01",
+      "end_date": "2025-12-01",
+      "targets": 316
+    },
+    {
+      "project_short": "Program  \u2013 EAA /Somerville College Oxford",
+      "country": "UK",
+      "partner": "Somerville College Oxford University",
+      "status": "Pipeline",
+      "total_budget": 473705.32,
+      "eaa_contribution": 269258.88,
+      "expenditure_eaa": 0.0,
+      "total_transferred": 0.0,
+      "remaining_budget": 269258.88,
+      "remaining_obligated": 269258.88,
+      "partner_leverage": 0.76,
+      "budget_consumption_pct": 0.0,
+      "transfer_vs_eaa_pct": 0.0,
+      "next_installment": 0.0,
+      "next_payment_date": "",
+      "payment_status": "No Payment Due",
+      "start_date": "2023-11-21",
+      "end_date": "2025-12-31",
+      "targets": 6
+    },
+    {
+      "project_short": "Qatar Scholarship",
+      "country": "Qatar",
+      "partner": "Awqaf and Local Universities ",
+      "status": "Active",
+      "total_budget": 33863387.67123288,
+      "eaa_contribution": 16055168.493150685,
+      "expenditure_eaa": 0.0,
+      "total_transferred": 0.0,
+      "remaining_budget": 16055168.493150685,
+      "remaining_obligated": 16055168.493150685,
+      "partner_leverage": 1.11,
+      "budget_consumption_pct": 0.0,
+      "transfer_vs_eaa_pct": 0.0,
+      "next_installment": 0.0,
+      "next_payment_date": "",
+      "payment_status": "No Payment Due",
+      "start_date": "2018-10-01",
+      "end_date": "2028-12-01",
+      "targets": 500
+    },
+    {
+      "project_short": "Coursera",
+      "country": "USA",
+      "partner": "Coursera",
+      "status": "Active",
+      "total_budget": 850000.0,
+      "eaa_contribution": 850000.0,
+      "expenditure_eaa": 650000.0,
+      "total_transferred": 650000.0,
+      "remaining_budget": 200000.0,
+      "remaining_obligated": 200000.0,
+      "partner_leverage": 0.0,
+      "budget_consumption_pct": 76.5,
+      "transfer_vs_eaa_pct": 76.5,
+      "next_installment": 200000.0,
+      "next_payment_date": "2026-08-01",
+      "payment_status": "Upcoming",
+      "start_date": "2024-06-01",
+      "end_date": "2027-05-01",
+      "targets": 120000
+    },
+    {
+      "project_short": "for Afghans in Idonesia (QSAI)",
+      "country": "Indonesia",
+      "partner": "Alight",
+      "status": "Active",
+      "total_budget": 3632840.0,
+      "eaa_contribution": 2403273.0,
+      "expenditure_eaa": 769047.0,
+      "total_transferred": 769047.0,
+      "remaining_budget": 1634226.0,
+      "remaining_obligated": 1634226.0,
+      "partner_leverage": 0.51,
+      "budget_consumption_pct": 32.0,
+      "transfer_vs_eaa_pct": 32.0,
+      "next_installment": 300000.0,
+      "next_payment_date": "2026-08-01",
+      "payment_status": "Upcoming",
+      "start_date": "2024-11-12",
+      "end_date": "2028-11-28",
+      "targets": 50
+    },
+    {
+      "project_short": "Qatar Scholarships within the Sanctuary Scholarships Programme \u2013 Education Above All Foundation/University of Oxford",
+      "country": "UK",
+      "partner": "Oxford",
+      "status": "Active",
+      "total_budget": 876083.4400000001,
+      "eaa_contribution": 876083.4400000001,
+      "expenditure_eaa": 442549.74000000005,
+      "total_transferred": 442549.74000000005,
+      "remaining_budget": 433533.7,
+      "remaining_obligated": 433533.7,
+      "partner_leverage": 0.0,
+      "budget_consumption_pct": 50.5,
+      "transfer_vs_eaa_pct": 50.5,
+      "next_installment": 0.0,
+      "next_payment_date": "2026-12-01",
+      "payment_status": "No Payment Due",
+      "start_date": "",
+      "end_date": "",
+      "targets": 0
+    },
+    {
+      "project_short": "Emergency Support for High School Exam (Tawjihi) for Gaza students",
+      "country": "Palestine",
+      "partner": "UNDP",
+      "status": "Active",
+      "total_budget": 0.0,
+      "eaa_contribution": 2716200.0,
+      "expenditure_eaa": 1629720.0,
+      "total_transferred": 1629720.0,
+      "remaining_budget": 1086480.0,
+      "remaining_obligated": 1086480.0,
+      "partner_leverage": -1.0,
+      "budget_consumption_pct": 60.0,
+      "transfer_vs_eaa_pct": 60.0,
+      "next_installment": 0.0,
+      "next_payment_date": "2026-12-01",
+      "payment_status": "No Payment Due",
+      "start_date": "",
+      "end_date": "",
+      "targets": 0
+    },
+    {
+      "project_short": "FIFA Students",
+      "country": "Qatar",
+      "partner": "FIFA",
+      "status": "Active",
+      "total_budget": 0.0,
+      "eaa_contribution": 1812022.0,
+      "expenditure_eaa": 147468.7671232877,
+      "total_transferred": 147468.7671232877,
+      "remaining_budget": 1664553.2328767122,
+      "remaining_obligated": 1664553.2328767122,
+      "partner_leverage": -1.0,
+      "budget_consumption_pct": 8.1,
+      "transfer_vs_eaa_pct": 8.1,
+      "next_installment": 457534.2465753425,
+      "next_payment_date": "",
+      "payment_status": "No Payment Due",
+      "start_date": "",
+      "end_date": "",
+      "targets": 0
+    },
+    {
+      "project_short": "Establishment of Two Dormitories",
+      "country": "Turkey",
+      "partner": "IHH",
+      "status": "Suspend",
+      "total_budget": 0.0,
+      "eaa_contribution": 0.0,
+      "expenditure_eaa": 0.0,
+      "total_transferred": 0.0,
+      "remaining_budget": 0.0,
+      "remaining_obligated": 0.0,
+      "partner_leverage": 0.0,
+      "budget_consumption_pct": 0.0,
+      "transfer_vs_eaa_pct": 0.0,
+      "next_installment": 0.0,
+      "next_payment_date": "",
+      "payment_status": "No Payment Due",
+      "start_date": "2019-04-01",
+      "end_date": "2029-04-01",
+      "targets": 940
+    },
+    {
+      "project_short": "Birzeit University",
+      "country": "Palestine",
+      "partner": "Birzet University",
+      "status": "Completed",
+      "total_budget": 1071431.0,
+      "eaa_contribution": 1071431.0,
+      "expenditure_eaa": 1071431.0,
+      "total_transferred": 1071431.0,
+      "remaining_budget": 0.0,
+      "remaining_obligated": 0.0,
+      "partner_leverage": 0.0,
+      "budget_consumption_pct": 100.0,
+      "transfer_vs_eaa_pct": 100.0,
+      "next_installment": 0.0,
+      "next_payment_date": "",
+      "payment_status": "No Payment Due",
+      "start_date": "2024-04-01",
+      "end_date": "2025-05-01",
+      "targets": 927
+    },
+    {
+      "project_short": "Rebuilding  Hope for the Palestinians in the Gaza Strip\n(Dignity Kits and Youth-led Humanitarian Initiatives)",
+      "country": "Palestine",
+      "partner": "UNFPA",
+      "status": "Active",
+      "total_budget": 3000000.0,
+      "eaa_contribution": 1000000.0,
+      "expenditure_eaa": 1000000.0,
+      "total_transferred": 1000000.0,
+      "remaining_budget": 0.0,
+      "remaining_obligated": 0.0,
+      "partner_leverage": 2.0,
+      "budget_consumption_pct": 100.0,
+      "transfer_vs_eaa_pct": 100.0,
+      "next_installment": 0.0,
+      "next_payment_date": "",
+      "payment_status": "No Payment Due",
+      "start_date": "2024-03-01",
+      "end_date": "2025-03-01",
+      "targets": 18000
+    },
+    {
+      "project_short": "- Sciences Po",
+      "country": "France",
+      "partner": "SciencesPo",
+      "status": "Completed",
+      "total_budget": 1351865.3289899998,
+      "eaa_contribution": 675932.6644949999,
+      "expenditure_eaa": 578550.87686158,
+      "total_transferred": 578551.0,
+      "remaining_budget": 0.0,
+      "remaining_obligated": 0.0,
+      "partner_leverage": 1.0,
+      "budget_consumption_pct": 85.6,
+      "transfer_vs_eaa_pct": 85.6,
+      "next_installment": 0.0,
+      "next_payment_date": "",
+      "payment_status": "No Payment Due",
+      "start_date": "2022-09-01",
+      "end_date": "2024-07-31",
+      "targets": 30
+    },
+    {
+      "project_short": "Rebuilding hope in the Gaza Strip - Providing hot meals (food) to displaced children in the Gaza Strip",
+      "country": "Palestine",
+      "partner": "QRC",
+      "status": "Completed",
+      "total_budget": 1025000.0,
+      "eaa_contribution": 262500.0,
+      "expenditure_eaa": 262500.0,
+      "total_transferred": 262500.0,
+      "remaining_budget": 0.0,
+      "remaining_obligated": 0.0,
+      "partner_leverage": 2.9,
+      "budget_consumption_pct": 100.0,
+      "transfer_vs_eaa_pct": 100.0,
+      "next_installment": 0.0,
+      "next_payment_date": "",
+      "payment_status": "No Payment Due",
+      "start_date": "2024-01-01",
+      "end_date": "2024-04-30",
+      "targets": 172500
+    },
+    {
+      "project_short": "Luminus Technology University College (LTUC)",
+      "country": "Jordan",
+      "partner": "LTUC",
+      "status": "Terminated",
+      "total_budget": 13382778.0,
+      "eaa_contribution": 3466451.0,
+      "expenditure_eaa": 3466451.0,
+      "total_transferred": 3466451.0,
+      "remaining_budget": 0.0,
+      "remaining_obligated": 0.0,
+      "partner_leverage": 2.86,
+      "budget_consumption_pct": 100.0,
+      "transfer_vs_eaa_pct": 100.0,
+      "next_installment": 0.0,
+      "next_payment_date": "",
+      "payment_status": "No Payment Due",
+      "start_date": "2021-10-17",
+      "end_date": "2023-09-01",
+      "targets": 604
+    },
+    {
+      "project_short": "Dynamic Futures Programme Gaza -I",
+      "country": "Palestine",
+      "partner": "UNDP",
+      "status": "Completed",
+      "total_budget": 10109455.0,
+      "eaa_contribution": 5099819.0,
+      "expenditure_eaa": 5099819.0,
+      "total_transferred": 5099819.0,
+      "remaining_budget": 0.0,
+      "remaining_obligated": 0.0,
+      "partner_leverage": 0.98,
+      "budget_consumption_pct": 100.0,
+      "transfer_vs_eaa_pct": 100.0,
+      "next_installment": 0.0,
+      "next_payment_date": "",
+      "payment_status": "No Payment Due",
+      "start_date": "2009-10-01",
+      "end_date": "2018-10-15",
+      "targets": 340
+    },
+    {
+      "project_short": "Dynamic Futures Programme Gaza-II",
+      "country": "Palestine",
+      "partner": "UNDP",
+      "status": "Completed",
+      "total_budget": 17191142.0,
+      "eaa_contribution": 17191142.0,
+      "expenditure_eaa": 15355774.431048,
+      "total_transferred": 15355774.431048,
+      "remaining_budget": 0.0,
+      "remaining_obligated": 0.0,
+      "partner_leverage": 0.0,
+      "budget_consumption_pct": 89.3,
+      "transfer_vs_eaa_pct": 89.3,
+      "next_installment": 0.0,
+      "next_payment_date": "",
+      "payment_status": "No Payment Due",
+      "start_date": "2014-09-15",
+      "end_date": "2022-06-30",
+      "targets": 630
+    },
+    {
+      "project_short": "Dynamic Futures Programme: Syrian Refugees and Palestinian Expansion",
+      "country": "Turkey",
+      "partner": "SPARK",
+      "status": "Completed",
+      "total_budget": 13783674.592438728,
+      "eaa_contribution": 8083658.756180009,
+      "expenditure_eaa": 5700015.836258719,
+      "total_transferred": 5700015.836258719,
+      "remaining_budget": 0.0,
+      "remaining_obligated": 0.0,
+      "partner_leverage": 0.71,
+      "budget_consumption_pct": 70.5,
+      "transfer_vs_eaa_pct": 70.5,
+      "next_installment": 0.0,
+      "next_payment_date": "",
+      "payment_status": "No Payment Due",
+      "start_date": "2016-04-30",
+      "end_date": "2022-06-30",
+      "targets": 3070
+    },
+    {
+      "project_short": "Dynamic Futures Programme: Syrian Refugees and Palestinian Expansion",
+      "country": "Jordan",
+      "partner": "SPARK",
+      "status": "Completed",
+      "total_budget": 3411608.8332492025,
+      "eaa_contribution": 3346293.5480555985,
+      "expenditure_eaa": 65315.285193604155,
+      "total_transferred": 65315.285193604155,
+      "remaining_budget": 0.0,
+      "remaining_obligated": 0.0,
+      "partner_leverage": 0.02,
+      "budget_consumption_pct": 2.0,
+      "transfer_vs_eaa_pct": 2.0,
+      "next_installment": 0.0,
+      "next_payment_date": "",
+      "payment_status": "No Payment Due",
+      "start_date": "2016-04-30",
+      "end_date": "2022-06-30",
+      "targets": 510
+    },
+    {
+      "project_short": "Dynamic Futures Programme: Syrian Refugees and Palestinian Expansion",
+      "country": "KRG",
+      "partner": "SPARK",
+      "status": "Completed",
+      "total_budget": 3987087.3848569966,
+      "eaa_contribution": 3987087.3848569966,
+      "expenditure_eaa": 0.0,
+      "total_transferred": 0.0,
+      "remaining_budget": 0.0,
+      "remaining_obligated": 0.0,
+      "partner_leverage": 0.0,
+      "budget_consumption_pct": 0.0,
+      "transfer_vs_eaa_pct": 0.0,
+      "next_installment": 0.0,
+      "next_payment_date": "",
+      "payment_status": "No Payment Due",
+      "start_date": "2016-04-30",
+      "end_date": "2022-06-30",
+      "targets": 180
+    },
+    {
+      "project_short": "Dynamic Futures Programme: Syrian Refugees and Palestinian Expansion",
+      "country": "Lebanon",
+      "partner": "SPARK",
+      "status": "Completed",
+      "total_budget": 14475812.02030202,
+      "eaa_contribution": 9438721.182449482,
+      "expenditure_eaa": 5037090.837852538,
+      "total_transferred": 5037090.837852538,
+      "remaining_budget": 0.0,
+      "remaining_obligated": 0.0,
+      "partner_leverage": 0.53,
+      "budget_consumption_pct": 53.4,
+      "transfer_vs_eaa_pct": 53.4,
+      "next_installment": 0.0,
+      "next_payment_date": "",
+      "payment_status": "No Payment Due",
+      "start_date": "2016-04-30",
+      "end_date": "2022-06-30",
+      "targets": 1635
+    },
+    {
+      "project_short": "Dynamic Futures Programme: Syrian Refugees and Palestinian Expansion",
+      "country": "Syria",
+      "partner": "SPARK",
+      "status": "Completed",
+      "total_budget": 2168141.5644579134,
+      "eaa_contribution": 2168141.5644579134,
+      "expenditure_eaa": 0.0,
+      "total_transferred": 0.0,
+      "remaining_budget": 0.0,
+      "remaining_obligated": 0.0,
+      "partner_leverage": 0.0,
+      "budget_consumption_pct": 0.0,
+      "transfer_vs_eaa_pct": 0.0,
+      "next_installment": 0.0,
+      "next_payment_date": "",
+      "payment_status": "No Payment Due",
+      "start_date": "2016-04-30",
+      "end_date": "2022-06-30",
+      "targets": 900
+    },
+    {
+      "project_short": "Dynamic Futures Programme: Syrian Refugees and Palestinian Expansion",
+      "country": " Palestine ",
+      "partner": "SPARK",
+      "status": "Completed",
+      "total_budget": 1082350.0406951418,
+      "eaa_contribution": 0.0,
+      "expenditure_eaa": 1082350.0406951418,
+      "total_transferred": 1082350.0406951418,
+      "remaining_budget": 0.0,
+      "remaining_obligated": 0.0,
+      "partner_leverage": 0.0,
+      "budget_consumption_pct": 0.0,
+      "transfer_vs_eaa_pct": 0.0,
+      "next_installment": 0.0,
+      "next_payment_date": "",
+      "payment_status": "No Payment Due",
+      "start_date": "2016-04-30",
+      "end_date": "2022-06-30",
+      "targets": 50
+    },
+    {
+      "project_short": "Construction of Two Roof Floors for the Faculties of Medicine and Science at the Islamic University of Gaza",
+      "country": "Palestine",
+      "partner": "QRC",
+      "status": "Completed",
+      "total_budget": 3000000.0,
+      "eaa_contribution": 1500000.0,
+      "expenditure_eaa": 1500000.0,
+      "total_transferred": 1500000.0,
+      "remaining_budget": 0.0,
+      "remaining_obligated": 0.0,
+      "partner_leverage": 1.0,
+      "budget_consumption_pct": 100.0,
+      "transfer_vs_eaa_pct": 100.0,
+      "next_installment": 0.0,
+      "next_payment_date": "",
+      "payment_status": "No Payment Due",
+      "start_date": "2010-10-06",
+      "end_date": "2012-04-01",
+      "targets": 21300
+    },
+    {
+      "project_short": "Support for the Education System in Iraq",
+      "country": "Iraq",
+      "partner": "UNESCO",
+      "status": "Completed",
+      "total_budget": 18684752.0,
+      "eaa_contribution": 18684752.0,
+      "expenditure_eaa": 18684752.0,
+      "total_transferred": 0.0,
+      "remaining_budget": 0.0,
+      "remaining_obligated": 0.0,
+      "partner_leverage": 0.0,
+      "budget_consumption_pct": 100.0,
+      "transfer_vs_eaa_pct": 0.0,
+      "next_installment": 0.0,
+      "next_payment_date": "",
+      "payment_status": "No Payment Due",
+      "start_date": "2010-12-01",
+      "end_date": "2016-11-01",
+      "targets": 819276
+    },
+    {
+      "project_short": "Rehabilitation and upgrading of higher educational institution in Gaza Strip",
+      "country": "Palestine",
+      "partner": "QRC",
+      "status": "Completed",
+      "total_budget": 5000000.0,
+      "eaa_contribution": 2500000.0,
+      "expenditure_eaa": 2500000.0,
+      "total_transferred": 2500000.0,
+      "remaining_budget": 0.0,
+      "remaining_obligated": 0.0,
+      "partner_leverage": 1.0,
+      "budget_consumption_pct": 100.0,
+      "transfer_vs_eaa_pct": 100.0,
+      "next_installment": 0.0,
+      "next_payment_date": "",
+      "payment_status": "No Payment Due",
+      "start_date": "2011-01-01",
+      "end_date": "2013-07-18",
+      "targets": 50000
+    },
+    {
+      "project_short": "Psychosocial Support, Disability services, Vocational Training, Small Business Grants and Educational excess for Disabled in Gaza",
+      "country": "Palestine",
+      "partner": "QRC",
+      "status": "Completed",
+      "total_budget": 5127590.0,
+      "eaa_contribution": 2563795.0,
+      "expenditure_eaa": 2563795.0,
+      "total_transferred": 2563795.0,
+      "remaining_budget": 0.0,
+      "remaining_obligated": 0.0,
+      "partner_leverage": 1.0,
+      "budget_consumption_pct": 100.0,
+      "transfer_vs_eaa_pct": 100.0,
+      "next_installment": 0.0,
+      "next_payment_date": "",
+      "payment_status": "No Payment Due",
+      "start_date": "2011-08-16",
+      "end_date": "2015-09-30",
+      "targets": 52748
+    },
+    {
+      "project_short": "Youth Empowerment through Vocational training and income Generation project",
+      "country": "Palestine",
+      "partner": "IRW",
+      "status": "Completed",
+      "total_budget": 630075.0,
+      "eaa_contribution": 315037.0,
+      "expenditure_eaa": 315037.0,
+      "total_transferred": 315037.0,
+      "remaining_budget": 0.0,
+      "remaining_obligated": 0.0,
+      "partner_leverage": 1.0,
+      "budget_consumption_pct": 100.0,
+      "transfer_vs_eaa_pct": 100.0,
+      "next_installment": 0.0,
+      "next_payment_date": "",
+      "payment_status": "No Payment Due",
+      "start_date": "2011-09-13",
+      "end_date": "2012-11-12",
+      "targets": 100
+    },
+    {
+      "project_short": "Urgent supply of medicines and medical consumables in favor of hospitals in the Gaza Strip",
+      "country": "Palestine",
+      "partner": "QRC",
+      "status": "Completed",
+      "total_budget": 1000000.0,
+      "eaa_contribution": 250000.0,
+      "expenditure_eaa": 250000.0,
+      "total_transferred": 250000.0,
+      "remaining_budget": 0.0,
+      "remaining_obligated": 0.0,
+      "partner_leverage": 3.0,
+      "budget_consumption_pct": 100.0,
+      "transfer_vs_eaa_pct": 100.0,
+      "next_installment": 0.0,
+      "next_payment_date": "",
+      "payment_status": "No Payment Due",
+      "start_date": "2013-02-28",
+      "end_date": "2014-05-28",
+      "targets": 40000
+    },
+    {
+      "project_short": "Investing in Education and Building Resilience Project",
+      "country": "Palestine",
+      "partner": "UNICEF",
+      "status": "Completed",
+      "total_budget": 5500000.0,
+      "eaa_contribution": 5500000.0,
+      "expenditure_eaa": 4446695.0,
+      "total_transferred": 4446695.0,
+      "remaining_budget": 0.0,
+      "remaining_obligated": 0.0,
+      "partner_leverage": 0.0,
+      "budget_consumption_pct": 80.8,
+      "transfer_vs_eaa_pct": 80.8,
+      "next_installment": 0.0,
+      "next_payment_date": "",
+      "payment_status": "No Payment Due",
+      "start_date": "2013-02-28",
+      "end_date": "2019-05-28",
+      "targets": 32695
+    },
+    {
+      "project_short": "Right To Education",
+      "country": "Palestine",
+      "partner": "UNDP",
+      "status": "Completed",
+      "total_budget": 21200041.0,
+      "eaa_contribution": 21200041.0,
+      "expenditure_eaa": 20246162.0,
+      "total_transferred": 20246162.0,
+      "remaining_budget": 0.0,
+      "remaining_obligated": 0.0,
+      "partner_leverage": 0.0,
+      "budget_consumption_pct": 95.5,
+      "transfer_vs_eaa_pct": 95.5,
+      "next_installment": 0.0,
+      "next_payment_date": "",
+      "payment_status": "No Payment Due",
+      "start_date": "2015-02-15",
+      "end_date": "2018-06-30",
+      "targets": 98994
+    },
+    {
+      "project_short": "Support to UNRWA Education Programme in Gaza: Equipping and Maintaining UNRWA Schools",
+      "country": "Palestine",
+      "partner": "UNRWA",
+      "status": "Completed",
+      "total_budget": 4612022.0,
+      "eaa_contribution": 4612022.0,
+      "expenditure_eaa": 3462432.0,
+      "total_transferred": 3462432.0,
+      "remaining_budget": 0.0,
+      "remaining_obligated": 0.0,
+      "partner_leverage": 0.0,
+      "budget_consumption_pct": 75.1,
+      "transfer_vs_eaa_pct": 75.1,
+      "next_installment": 0.0,
+      "next_payment_date": "",
+      "payment_status": "No Payment Due",
+      "start_date": "2015-03-01",
+      "end_date": "2019-02-28",
+      "targets": 86000
+    },
+    {
+      "project_short": "Qatar",
+      "country": "Qatar",
+      "partner": "University of Calgary in Qatar",
+      "status": "Completed",
+      "total_budget": 0.0,
+      "eaa_contribution": 0.0,
+      "expenditure_eaa": 0.0,
+      "total_transferred": 0.0,
+      "remaining_budget": 0.0,
+      "remaining_obligated": 0.0,
+      "partner_leverage": 0.0,
+      "budget_consumption_pct": 0.0,
+      "transfer_vs_eaa_pct": 0.0,
+      "next_installment": 0.0,
+      "next_payment_date": "",
+      "payment_status": "No Payment Due",
+      "start_date": "2018-06-15",
+      "end_date": "2023-06-15",
+      "targets": 24
+    }
+  ],
+  "country_summary": [
+    {
+      "country": "Palestine",
+      "total_budget": 109418744.29291728,
+      "eaa_contribution": 79895710.65,
+      "expenditure_eaa": 65120194.29645146,
+      "partner_cofunding": 29523033.64291729
+    },
+    {
+      "country": "USA",
+      "total_budget": 54718596.0,
+      "eaa_contribution": 17841054.0,
+      "expenditure_eaa": 8230938.0,
+      "partner_cofunding": 36877542.0
+    },
+    {
+      "country": "Lebanon",
+      "total_budget": 53605217.02030202,
+      "eaa_contribution": 13582561.182449482,
+      "expenditure_eaa": 8382092.337852538,
+      "partner_cofunding": 40022655.83785254
+    },
+    {
+      "country": "Qatar",
+      "total_budget": 33863387.67123288,
+      "eaa_contribution": 17867190.493150685,
+      "expenditure_eaa": 147468.7671232877,
+      "partner_cofunding": 15996197.178082194
+    },
+    {
+      "country": "Iraq",
+      "total_budget": 18684752.0,
+      "eaa_contribution": 18684752.0,
+      "expenditure_eaa": 18684752.0,
+      "partner_cofunding": 0.0
+    },
+    {
+      "country": "Jordan",
+      "total_budget": 16794386.833249204,
+      "eaa_contribution": 6812744.5480555985,
+      "expenditure_eaa": 3531766.285193604,
+      "partner_cofunding": 9981642.285193603
+    },
+    {
+      "country": "Turkey",
+      "total_budget": 13783674.592438728,
+      "eaa_contribution": 8083658.756180009,
+      "expenditure_eaa": 5700015.836258719,
+      "partner_cofunding": 5700015.836258719
+    },
+    {
+      "country": "France",
+      "total_budget": 4476703.328989999,
+      "eaa_contribution": 1925867.664495,
+      "expenditure_eaa": 1334036.87686158,
+      "partner_cofunding": 2550835.6644949997
+    },
+    {
+      "country": "KRG",
+      "total_budget": 3987087.3848569966,
+      "eaa_contribution": 3987087.3848569966,
+      "expenditure_eaa": 0.0,
+      "partner_cofunding": 0.0
+    },
+    {
+      "country": "Indonesia",
+      "total_budget": 3632840.0,
+      "eaa_contribution": 2403273.0,
+      "expenditure_eaa": 769047.0,
+      "partner_cofunding": 1229567.0
+    },
+    {
+      "country": "Syria",
+      "total_budget": 2168141.5644579134,
+      "eaa_contribution": 2168141.5644579134,
+      "expenditure_eaa": 0.0,
+      "partner_cofunding": 0.0
+    },
+    {
+      "country": "UK",
+      "total_budget": 1349788.76,
+      "eaa_contribution": 1145342.32,
+      "expenditure_eaa": 442549.74000000005,
+      "partner_cofunding": 204446.44
+    }
+  ],
+  "status_summary": [
+    {
+      "status": "Active",
+      "total_budget": 129085383.36345503,
+      "project_count": 12
+    },
+    {
+      "status": "Completed",
+      "total_budget": 173541452.76499,
+      "project_count": 22
+    },
+    {
+      "status": "Pipeline",
+      "total_budget": 473705.32,
+      "project_count": 1
+    },
+    {
+      "status": "Suspend",
+      "total_budget": 0.0,
+      "project_count": 1
+    },
+    {
+      "status": "Terminated",
+      "total_budget": 13382778.0,
+      "project_count": 1
+    }
+  ],
+  "payment_calendar": [
+    {
+      "project_short": "Afghan Project (QSAP): Phase 1",
+      "country": "USA",
+      "partner": "IIE",
+      "next_installment": 1643846.0,
+      "next_payment_date": "2026-08-01",
+      "payment_status": "Upcoming",
+      "remaining_obligated": 5753459.0
+    },
+    {
+      "project_short": "Afghan Project (QSAP): Phase 2",
+      "country": "USA",
+      "partner": "IIE",
+      "next_installment": 850000.0,
+      "next_payment_date": "2026-08-01",
+      "payment_status": "Upcoming",
+      "remaining_obligated": 2477450.0
+    },
+    {
+      "project_short": "- Sciences Po 2",
+      "country": "France",
+      "partner": "Sciences Po",
+      "next_installment": 494449.0,
+      "next_payment_date": "2026-08-01",
+      "payment_status": "Upcoming",
+      "remaining_obligated": 494449.0
+    },
+    {
+      "project_short": "Birzeit University Phase II",
+      "country": "Palestine",
+      "partner": "Birzeit University",
+      "next_installment": 930000.0,
+      "next_payment_date": "2026-08-01",
+      "payment_status": "Upcoming",
+      "remaining_obligated": 7070000.0
+    },
+    {
+      "project_short": "Coursera",
+      "country": "USA",
+      "partner": "Coursera",
+      "next_installment": 200000.0,
+      "next_payment_date": "2026-08-01",
+      "payment_status": "Upcoming",
+      "remaining_obligated": 200000.0
+    },
+    {
+      "project_short": "for Afghans in Idonesia (QSAI)",
+      "country": "Indonesia",
+      "partner": "Alight",
+      "next_installment": 300000.0,
+      "next_payment_date": "2026-08-01",
+      "payment_status": "Upcoming",
+      "remaining_obligated": 1634226.0
+    },
+    {
+      "project_short": "Al Quds Bard College",
+      "country": "Palestine",
+      "partner": "Bard",
+      "next_installment": 522955.0,
+      "next_payment_date": "2027-02-01",
+      "payment_status": "Future",
+      "remaining_obligated": 1371945.65
+    },
+    {
+      "project_short": "FIFA Students",
+      "country": "Qatar",
+      "partner": "FIFA",
+      "next_installment": 457534.2465753425,
+      "next_payment_date": "",
+      "payment_status": "No Payment Due",
+      "remaining_obligated": 1664553.2328767122
+    }
+  ],
+  "cash_flow": {
+    "projects": [
+      {
+        "project": "Qatar Scholarship Afghan Project (QSAP): Phase 1",
+        "budget": 12813604.0,
+        "disbursed": 7060145.0,
+        "year_2026": 2465769.0,
+        "year_2027": 1643845.0,
+        "year_2028": 1643845.0,
+        "year_2029": 0.0,
+        "year_2030": 0.0,
+        "total_remaining": 5753459.0
+      },
+      {
+        "project": "Qatar Scholarship Afghan Project (QSAP): Phase 1",
+        "budget": 4177450.0,
+        "disbursed": 850000.0,
+        "year_2026": 1700000.0,
+        "year_2027": 1627450.0,
+        "year_2028": 0.0,
+        "year_2029": 0.0,
+        "year_2030": 0.0,
+        "total_remaining": 3327450.0
+      },
+      {
+        "project": "Qatar Scholarship - EAA/ Sciences Po 2",
+        "budget": 1249935.0,
+        "disbursed": 755486.0,
+        "year_2026": 494449.0,
+        "year_2027": 0.0,
+        "year_2028": 0.0,
+        "year_2029": 0.0,
+        "year_2030": 0.0,
+        "total_remaining": 494449.0
+      },
+      {
+        "project": "Qatar Scholarship EAA/ Birzeit University Phase II",
+        "budget": 10000000.0,
+        "disbursed": 2930000.0,
+        "year_2026": 1860000.0,
+        "year_2027": 1860000.0,
+        "year_2028": 1860000.0,
+        "year_2029": 1490000.0,
+        "year_2030": 0.0,
+        "total_remaining": 7070000.0
+      },
+      {
+        "project": "Qatar Scholarship for Afghans in Idonesia (QSAI)",
+        "budget": 2403273.0,
+        "disbursed": 769047.0,
+        "year_2026": 802796.0,
+        "year_2027": 500000.0,
+        "year_2028": 331430.0,
+        "year_2029": 0.0,
+        "year_2030": 0.0,
+        "total_remaining": 1634226.0
+      },
+      {
+        "project": "Qatar Scholarships within the Sanctuary Scholarships Programme \u2013 Education Above All Foundation/University of Oxford",
+        "budget": 876083.4400000001,
+        "disbursed": 442549.74000000005,
+        "year_2026": 433533.7,
+        "year_2027": 0.0,
+        "year_2028": 0.0,
+        "year_2029": 0.0,
+        "year_2030": 0.0,
+        "total_remaining": 433533.7
+      },
+      {
+        "project": "Emergency Support for High School Exam (Tawjihi) for Gaza students",
+        "budget": 2716200.0,
+        "disbursed": 1629720.0,
+        "year_2026": 1086480.0,
+        "year_2027": 0.0,
+        "year_2028": 0.0,
+        "year_2029": 0.0,
+        "year_2030": 0.0,
+        "total_remaining": 1086480.0
+      },
+      {
+        "project": "Qatar Scholarship FIFA Students",
+        "budget": 1812022.0,
+        "disbursed": 147468.7671232877,
+        "year_2026": 657534.2465753425,
+        "year_2027": 503509.49315068487,
+        "year_2028": 503509.49315068487,
+        "year_2029": 0.0,
+        "year_2030": 0.0,
+        "total_remaining": 1664553.2328767125
+      }
+    ],
+    "totals": {
+      "total_budget": 36048567.44,
+      "total_disbursed": 14584416.507123288,
+      "total_2026": 9500561.946575342,
+      "total_2027": 6134804.493150685,
+      "total_2028": 4338784.493150685,
+      "total_2029": 1490000.0,
+      "total_2030": 0.0,
+      "total_remaining": 21464150.932876714
+    }
+  }
+};
+
+        function checkPassword() {
+            const input = document.getElementById("passwordInput").value;
+            if (input === "123456") {
+                document.getElementById("passwordOverlay").style.display = "none";
+                document.getElementById("dashboard").style.display = "block";
+                initDashboard();
+            } else {
+                document.getElementById("errorMsg").style.display = "block";
+            }
+        }
+
+        function formatMoney(amount) {
+            if (amount >= 1000000) return "$" + (amount / 1000000).toFixed(1) + "M";
+            if (amount >= 1000) return "$" + (amount / 1000).toFixed(1) + "K";
+            return "$" + amount.toFixed(0);
+        }
+
+        function formatMoneyFull(amount) {
+            return "$" + amount.toLocaleString("en-US", {maximumFractionDigits: 0});
+        }
+
+        function initDashboard() {
+            updateKPIs();
+            initCharts();
+            populateFilters();
+            renderProjectsTable();
+            renderPaymentsTable();
+            renderCashFlow();
+            populateDetailDropdown();
+        }
+
+        function updateKPIs() {
+            const s = dashboardData.summary;
+            document.getElementById("kpi-total-budget").textContent = formatMoney(s.total_budget);
+            document.getElementById("kpi-eaa-contribution").textContent = formatMoney(s.total_eaa);
+            document.getElementById("kpi-eaa-pct").textContent = ((s.total_eaa / s.total_budget) * 100).toFixed(1) + "% of total";
+            document.getElementById("kpi-transferred").textContent = formatMoney(s.total_transferred);
+            document.getElementById("kpi-transfer-pct").textContent = ((s.total_transferred / s.total_eaa) * 100).toFixed(1) + "% of EAA";
+            document.getElementById("kpi-expenditure").textContent = formatMoney(s.total_expenditure);
+            document.getElementById("kpi-exp-pct").textContent = ((s.total_expenditure / s.total_eaa) * 100).toFixed(1) + "% of EAA";
+            document.getElementById("kpi-remaining").textContent = formatMoney(s.total_remaining);
+            document.getElementById("kpi-leverage").textContent = (s.partner_cofunding / s.total_eaa).toFixed(2) + "x";
+        }
+
+        function initCharts() {
+            Chart.defaults.color = "#333333";
+            Chart.defaults.borderColor = "#EEEEEE";
+
+            new Chart(document.getElementById("countryChart"), {
+                type: "bar",
+                data: {
+                    labels: dashboardData.country_summary.map(c => c.country),
+                    datasets: [{
+                        label: "Total Budget",
+                        data: dashboardData.country_summary.map(c => c.total_budget),
+                        backgroundColor: "#E31837",
+                        borderColor: "#C41432",
+                        borderWidth: 1
+                    }, {
+                        label: "EAA Contribution",
+                        data: dashboardData.country_summary.map(c => c.eaa_contribution),
+                        backgroundColor: "#333333",
+                        borderColor: "#222222",
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: "bottom" } },
+                    scales: { y: { ticks: { callback: v => formatMoney(v) } } }
+                }
+            });
+
+            new Chart(document.getElementById("fundingChart"), {
+                type: "doughnut",
+                data: {
+                    labels: ["EAA Contribution", "Partner Co-funding"],
+                    datasets: [{
+                        data: [dashboardData.summary.total_eaa, dashboardData.summary.partner_cofunding],
+                        backgroundColor: ["#E31837", "#333333"],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: "bottom" },
+                        tooltip: {
+                            callbacks: {
+                                label: function(ctx) {
+                                    const val = ctx.raw;
+                                    const total = ctx.dataset.data.reduce((a,b) => a+b, 0);
+                                    return formatMoney(val) + " (" + ((val/total)*100).toFixed(1) + "%)";
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            const statusColors = { "Active": "#E31837", "Completed": "#333333", "Suspend": "#F1C40F", "Terminated": "#999999", "Pipeline": "#9B59B6" };
+            new Chart(document.getElementById("statusChart"), {
+                type: "pie",
+                data: {
+                    labels: dashboardData.status_summary.map(s => s.status),
+                    datasets: [{
+                        data: dashboardData.status_summary.map(s => s.project_count),
+                        backgroundColor: dashboardData.status_summary.map(s => statusColors[s.status] || "#999999")
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: "bottom" } }
+                }
+            });
+
+            const activeProjects = dashboardData.projects.filter(p => p.status === "Active" && p.eaa_contribution > 0);
+            new Chart(document.getElementById("consumptionChart"), {
+                type: "bar",
+                data: {
+                    labels: activeProjects.map(p => p.project_short.substring(0, 20)),
+                    datasets: [{
+                        label: "Budget Consumption %",
+                        data: activeProjects.map(p => p.budget_consumption_pct),
+                        backgroundColor: activeProjects.map(p => p.budget_consumption_pct > 80 ? "#E31837" : p.budget_consumption_pct > 50 ? "#F1C40F" : "#2ECC71"),
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: "y",
+                    plugins: { legend: { display: false } },
+                    scales: { x: { max: 100, ticks: { callback: v => v + "%" } } }
+                }
+            });
+        }
+
+        function populateFilters() {
+            const countries = [...new Set(dashboardData.projects.map(p => p.country))].sort();
+            const select = document.getElementById("filter-country");
+            countries.forEach(c => {
+                const opt = document.createElement("option");
+                opt.value = c;
+                opt.textContent = c;
+                select.appendChild(opt);
+            });
+        }
+
+        function renderProjectsTable() {
+            const tbody = document.getElementById("projects-tbody");
+            tbody.innerHTML = "";
+            dashboardData.projects.forEach(p => {
+                const row = document.createElement("tr");
+                row.innerHTML = `<td><strong>${p.project_short}</strong></td><td>${p.country}</td><td>${p.partner}</td><td><span class="status-badge status-${p.status.toLowerCase().replace(/\s/g, "-")}">${p.status}</span></td><td class="number">${formatMoneyFull(p.total_budget)}</td><td class="number">${formatMoneyFull(p.eaa_contribution)}</td><td class="number">${formatMoneyFull(p.total_transferred)}</td><td class="number">${formatMoneyFull(p.expenditure_eaa)}</td><td class="number">${formatMoneyFull(p.remaining_budget)}</td><td class="number">${p.partner_leverage.toFixed(2)}x</td><td><div class="progress-bar"><div class="progress-fill" style="width: ${Math.min(p.budget_consumption_pct, 100)}%; background: ${p.budget_consumption_pct > 80 ? "#E31837" : p.budget_consumption_pct > 50 ? "#F1C40F" : "#2ECC71"}"></div></div><small>${p.budget_consumption_pct.toFixed(1)}%</small></td>`;
+                tbody.appendChild(row);
+            });
+        }
+
+        function filterProjects() {
+            const status = document.getElementById("filter-status").value;
+            const country = document.getElementById("filter-country").value;
+            const search = document.getElementById("filter-search").value.toLowerCase();
+            document.querySelectorAll("#projects-tbody tr").forEach((row, i) => {
+                const p = dashboardData.projects[i];
+                let show = true;
+                if (status && p.status !== status) show = false;
+                if (country && p.country !== country) show = false;
+                if (search && !p.project_short.toLowerCase().includes(search) && !p.partner.toLowerCase().includes(search)) show = false;
+                row.style.display = show ? "" : "none";
+            });
+        }
+
+        function renderPaymentsTable() {
+            const tbody = document.getElementById("payments-tbody");
+            tbody.innerHTML = "";
+            if (dashboardData.payment_calendar.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 40px;">No upcoming payments scheduled</td></tr>';
+                return;
+            }
+            dashboardData.payment_calendar.forEach(p => {
+                const row = document.createElement("tr");
+                const statusClass = p.payment_status === "Due Soon" ? "payment-due-soon" : p.payment_status === "Upcoming" ? "payment-upcoming" : "payment-future";
+                row.innerHTML = `<td><strong>${p.project_short}</strong></td><td>${p.country}</td><td>${p.partner}</td><td class="number">${formatMoneyFull(p.next_installment)}</td><td>${p.next_payment_date || "TBD"}</td><td class="${statusClass}">${p.payment_status}</td><td class="number">${formatMoneyFull(p.remaining_obligated)}</td>`;
+                tbody.appendChild(row);
+            });
+        }
+
+        function renderCashFlow() {
+            const cf = dashboardData.cash_flow;
+            if (!cf || !cf.projects || cf.projects.length === 0) return;
+
+            new Chart(document.getElementById("cashFlowChart"), {
+                type: "bar",
+                data: {
+                    labels: ["2026", "2027", "2028", "2029", "2030"],
+                    datasets: [{
+                        label: "Cash Flow by Year",
+                        data: [cf.totals.total_2026, cf.totals.total_2027, cf.totals.total_2028, cf.totals.total_2029, cf.totals.total_2030],
+                        backgroundColor: ["#E31837", "#F1C40F", "#2ECC71", "#9B59B6", "#333333"],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { ticks: { callback: v => formatMoney(v) } } }
+                }
+            });
+
+            const container = document.getElementById("cash-flow-bars");
+            container.innerHTML = "";
+            cf.projects.forEach(p => {
+                const total = p.budget;
+                const disbursedPct = (p.disbursed / total * 100).toFixed(1);
+                const y2026Pct = (p.year_2026 / total * 100).toFixed(1);
+                const y2027Pct = (p.year_2027 / total * 100).toFixed(1);
+                const y2028Pct = (p.year_2028 / total * 100).toFixed(1);
+                const y2029Pct = (p.year_2029 / total * 100).toFixed(1);
+                const y2030Pct = (p.year_2030 / total * 100).toFixed(1);
+                
+                const div = document.createElement("div");
+                div.className = "cash-flow-bar";
+                div.innerHTML = `
+                    <div class="cash-flow-label">${p.project.substring(0, 35)}</div>
+                    <div class="cash-flow-progress">
+                        <div class="cash-flow-fill" style="width: ${disbursedPct}%; background: #333333;">${disbursedPct > 8 ? disbursedPct + "%" : ""}</div>
+                        <div class="cash-flow-fill" style="width: ${y2026Pct}%; background: #E31837;">${y2026Pct > 8 ? y2026Pct + "%" : ""}</div>
+                        <div class="cash-flow-fill" style="width: ${y2027Pct}%; background: #F1C40F;">${y2027Pct > 8 ? y2027Pct + "%" : ""}</div>
+                        <div class="cash-flow-fill" style="width: ${y2028Pct}%; background: #2ECC71;">${y2028Pct > 8 ? y2028Pct + "%" : ""}</div>
+                        <div class="cash-flow-fill" style="width: ${parseFloat(y2029Pct) + parseFloat(y2030Pct)}%; background: #9B59B6;">${(parseFloat(y2029Pct) + parseFloat(y2030Pct)) > 8 ? (parseFloat(y2029Pct) + parseFloat(y2030Pct)).toFixed(1) + "%" : ""}</div>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function populateDetailDropdown() {
+            const select = document.getElementById("detail-project");
+            dashboardData.projects.forEach(p => {
+                const opt = document.createElement("option");
+                opt.value = p.project_short;
+                opt.textContent = p.project_short;
+                select.appendChild(opt);
+            });
+        }
+
+        function showProjectDetail() {
+            const projectName = document.getElementById("detail-project").value;
+            if (!projectName) { document.getElementById("project-detail-content").innerHTML = ""; return; }
+            const p = dashboardData.projects.find(pr => pr.project_short === projectName);
+            if (!p) return;
+            const cofunding = p.total_budget - p.eaa_contribution;
+            const html = `<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-top: 20px;"><div class="kpi-card"><div class="kpi-icon">$</div><div class="kpi-value">${formatMoney(p.total_budget)}</div><div class="kpi-label">Total Budget</div></div><div class="kpi-card"><div class="kpi-icon">B</div><div class="kpi-value">${formatMoney(p.eaa_contribution)}</div><div class="kpi-label">EAA Contribution</div></div><div class="kpi-card"><div class="kpi-icon">P</div><div class="kpi-value">${formatMoney(cofunding)}</div><div class="kpi-label">Partner Co-funding</div></div><div class="kpi-card"><div class="kpi-icon">T</div><div class="kpi-value">${formatMoney(p.total_transferred)}</div><div class="kpi-label">Total Transferred</div></div><div class="kpi-card"><div class="kpi-icon">E</div><div class="kpi-value">${formatMoney(p.expenditure_eaa)}</div><div class="kpi-label">Expenditure</div></div><div class="kpi-card"><div class="kpi-icon">R</div><div class="kpi-value">${formatMoney(p.remaining_budget)}</div><div class="kpi-label">Remaining Budget</div></div></div><div style="margin-top: 30px;"><h3 style="color: #E31837; margin-bottom: 15px;">Financial Progress</h3><div style="margin-bottom: 15px;"><div style="display: flex; justify-content: space-between; margin-bottom: 5px;"><span>Budget Consumption</span><span>${p.budget_consumption_pct.toFixed(1)}%</span></div><div class="progress-bar"><div class="progress-fill" style="width: ${Math.min(p.budget_consumption_pct, 100)}%; background: ${p.budget_consumption_pct > 80 ? "#E31837" : p.budget_consumption_pct > 50 ? "#F1C40F" : "#2ECC71"}"></div></div></div><div style="margin-bottom: 15px;"><div style="display: flex; justify-content: space-between; margin-bottom: 5px;"><span>Transfer vs EAA Contribution</span><span>${p.transfer_vs_eaa_pct.toFixed(1)}%</span></div><div class="progress-bar"><div class="progress-fill" style="width: ${Math.min(p.transfer_vs_eaa_pct, 100)}%; background: #333333"></div></div></div><div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-top: 20px;"><div><p style="color: #999999; font-size: 12px;">PARTNER LEVERAGE</p><p style="font-size: 24px; color: #E31837; font-weight: bold;">${p.partner_leverage.toFixed(2)}x</p><p style="font-size: 12px; color: #999999;">For every $1 EAA, partners contribute $${p.partner_leverage.toFixed(2)}</p></div><div><p style="color: #999999; font-size: 12px;">NEXT INSTALLMENT</p><p style="font-size: 24px; color: #E31837; font-weight: bold;">${p.next_installment ? formatMoney(p.next_installment) : "N/A"}</p><p style="font-size: 12px; color: #999999;">${p.next_payment_date ? "Due: " + p.next_payment_date : "No payment scheduled"}</p></div></div></div>`;
+            document.getElementById("project-detail-content").innerHTML = html;
+        }
+
+        function showTab(tabName, el) {
+            document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+            document.querySelectorAll(".tab-content").forEach(t => t.classList.remove("active"));
+            el.classList.add("active");
+            document.getElementById(tabName).classList.add("active");
+        }
+
+        document.getElementById("passwordInput").addEventListener("keypress", function(e) {
+            if (e.key === "Enter") checkPassword();
+        });
+    </script>
+</body>
+</html>
